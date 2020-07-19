@@ -1,5 +1,3 @@
-import { type } from "os";
-
 class Promise2 {
   callList = []
   status = 'pending'
