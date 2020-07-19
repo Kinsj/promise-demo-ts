@@ -1,12 +1,28 @@
 import { type } from "os";
 
 class Promise2 {
-  success = null
-  resolve() {
+  callList = []
+  status = 'pending'
+  resolve(res) {
+    if(this.status !== 'pending') return;
+    this.status = 'fulfilled'
     setTimeout(() => {
-      if (typeof this.success === 'function') {
-        this.success();
-      }
+      this.callList.forEach(callback => {
+        if (typeof callback[0] === 'function') {
+          callback[0].call(undefined, res);
+        }
+      })
+    })
+  }
+  reject(res) {
+    if(this.status !== 'pending') return;
+    this.status = 'rejected'
+    setTimeout(() => {
+      this.callList.forEach(callback => {
+        if (typeof callback[1] === 'function') {
+          callback[1].call(undefined, res);
+        }
+      })
     })
   }
   constructor(fn) {
@@ -15,11 +31,15 @@ class Promise2 {
     }
     fn(
       this.resolve.bind(this),
-      () => { }
+      this.reject.bind(this)
     );
   }
-  then(fn) {
-    this.success = fn;
+  then(success?, fail?) {
+    const handle = [
+      typeof success === 'function' ? success : null,
+      typeof fail === 'function' ? fail : null
+    ]
+    this.callList.push(handle)
   }
 }
 

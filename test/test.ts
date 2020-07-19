@@ -25,7 +25,7 @@ describe("Promise", () => {
     })
   });
   it("new Promise(fn) 会生成一个对象，对象有 then 方法", () => {
-    const p = new Promise(() => {})
+    const p = new Promise(() => { })
     assert.isFunction(p.then)
   });
   it("new Promise(fn) 中的 fn 立即执行", () => {
@@ -51,13 +51,81 @@ describe("Promise", () => {
     })
     p.then(success);
   });
-  // it("promise.then(null, fail) 中的 fail 会在 reject 被调用的时候执行", done => {});
-  // it("2.2.1 onFulfilled和onRejected都是可选的参数：", () => {});
-  // it("2.2.2 如果onFulfilled是函数", done => {});
-  // it("2.2.3 如果onRejected是函数", done => {});
-  // it("2.2.4 在我的代码执行完之前，不得调用 then 后面的俩函数", done => {});
-  // it("2.2.4 失败回调", done => {});
-  // it("2.2.5 onFulfilled和onRejected必须被当做函数调用", done => {});
-  // it("2.2.6 then可以在同一个promise里被多次调用", done => {});
-  // it("2.2.6.2 then可以在同一个promise里被多次调用", done => {});
+  it("promise.then(null, fail) 中的 fail 会在 reject 被调用的时候执行", done => {
+    const fail = sinon.fake()
+    const p = new Promise((resolve, reject) => {
+      assert.isFalse(fail.called)
+      reject();
+      setTimeout(() => {
+        assert.isTrue(fail.called)
+        done()
+      })
+    })
+    p.then(null, fail);
+  });
+  it("2.2.2 onFulfilled一定是在status为fulfilled后调用，它接受参数，且只调用一次", done => {
+    const fn = sinon.fake()
+    const p = new Promise((resolve, reject) => {
+      assert.isFalse(fn.called)
+      resolve(233)
+      resolve(333)
+      setTimeout(() => {
+        assert(p.status === 'fulfilled')
+        assert(fn.called && fn.calledOnce)
+        assert(fn.calledWith(233))
+        done();
+      })
+    })
+    p.then(fn)
+  });
+  it("2.2.3 onRejected 一定是在status为rejected后调用，它接受参数，且只调用一次", done => {
+    const fn = sinon.fake()
+    const p = new Promise((resolve, reject) => {
+      assert.isFalse(fn.called)
+      reject(233)
+      reject(333)
+      setTimeout(() => {
+        assert(p.status === 'rejected')
+        assert(fn.called && fn.calledOnce)
+        assert(fn.calledWith(233))
+        done();
+      })
+    })
+    p.then(null, fn)
+  });
+  it("2.2.4 在我的代码执行完之前，不得调用 then 后面的俩函数", () => {
+    const [succeed, failed] = [sinon.fake(), sinon.fake()]
+    const p1 = new Promise((resolve, reject) => {
+      resolve(333)
+    })
+    p1.then(succeed)
+    const p2 = new Promise((resolve, reject) => {
+      assert.isFalse(succeed.called)
+      reject(333)
+    })
+    p2.then(null, failed)
+    assert.isFalse(succeed.called || failed.called)
+  });
+  it("2.2.5 onFulfilled和onRejected必须被当做函数调用(this为undefined)", done => {
+    const fn = function () {
+      assert.isUndefined(this)
+      done()
+    }
+    const p = new Promise((resolve, reject) => {
+      resolve()
+    }).then(fn)
+  });
+  it("2.2.6 then可以在同一个promise里被多次调用", done => {
+    const [fn1, fn2, fn3] = [sinon.fake(), sinon.fake(), sinon.fake()]
+    const p = new Promise((resolve, reject) => {
+      resolve()
+    })
+    p.then(fn1)
+    p.then(fn2)
+    p.then(fn3)
+    setTimeout(() => {
+      assert(fn1.called && fn2.called && fn3.called)
+      done()
+    })
+  });
 });
