@@ -5,7 +5,6 @@ chai.use(sinonChai);
 
 const assert = chai.assert;
 import Promise from "../src/promise";
-import { promises } from "dns";
 
 describe("Promise", () => {
   it("是一个类", () => {
